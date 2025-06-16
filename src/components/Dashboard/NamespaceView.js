@@ -180,153 +180,262 @@ function NamespaceView() {
   }
 
   return (
-    <Container sx={{ mt: 2, mb: 4 }}>
-      <Box display="flex" alignItems="center" mb={3}>
-        <IconButton onClick={() => navigate('/dashboard')} sx={{ mr: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Box flexGrow={1}>
-          <Typography variant="h4" component="h1">
-            {namespace.name}
-          </Typography>
-          {namespace.description && (
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-              {namespace.description}
+    <Box sx={{ backgroundColor: '#1a1a1a', minHeight: '100vh' }}>
+      <Container sx={{ pt: 2, pb: 4 }}>
+        <Box display="flex" alignItems="center" mb={3}>
+          <IconButton 
+            onClick={() => navigate('/dashboard')} 
+            sx={{ 
+              mr: 2,
+              backgroundColor: '#fff9c4',
+              color: '#333',
+              '&:hover': { backgroundColor: '#f57c00', color: 'white' }
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Box flexGrow={1}>
+            <Typography variant="h4" component="h1" sx={{ color: '#ffc107', fontWeight: 500 }}>
+              {namespace.name}
             </Typography>
-          )}
-          <Box display="flex" gap={1} mt={1}>
-            <Chip 
-              icon={<TaskIcon />}
-              label={`${tasks.length} tasks`} 
-              color="primary" 
-              variant="outlined" 
-            />
-            <Chip 
-              icon={<CheckCircleIcon />}
-              label={`${completedTasks} completed`} 
-              color="success" 
-              variant="outlined" 
-            />
+            {namespace.description && (
+              <Typography variant="body1" sx={{ color: '#666', mt: 0.5 }}>
+                {namespace.description}
+              </Typography>
+            )}
+            <Box display="flex" gap={1} mt={1.5}>
+              <Chip 
+                icon={<TaskIcon />}
+                label={`${tasks.length} tasks`} 
+                sx={{
+                  backgroundColor: '#fff9c4',
+                  color: '#333',
+                  fontWeight: 500,
+                  fontSize: '0.8rem'
+                }}
+              />
+              <Chip 
+                icon={<CheckCircleIcon />}
+                label={`${completedTasks} completed`} 
+                sx={{
+                  backgroundColor: completedTasks > 0 ? '#4caf50' : '#e0e0e0',
+                  color: completedTasks > 0 ? 'white' : '#666',
+                  fontWeight: 500,
+                  fontSize: '0.8rem'
+                }}
+              />
+            </Box>
           </Box>
         </Box>
-      </Box>
 
-      {tasks.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <TaskIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No tasks yet
-          </Typography>
-          <Typography color="text.secondary" mb={3}>
-            Create your first task to get started organizing your work!
-          </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />}
-            onClick={() => setOpenDialog(true)}
-          >
-            Create Task
-          </Button>
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {tasks.map((task) => (
-            <Grid item xs={12} md={6} lg={4} key={task._id}>
-              <TaskCard 
-                task={task} 
-                onDelete={() => handleDeleteTask(task._id)}
-                onUpdate={(updatedTask) => handleUpdateTask(task._id, updatedTask)}
-                onToggle={() => handleToggleTask(task._id)}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      )}
+        {tasks.length === 0 ? (
+          <Paper sx={{ 
+            p: 4, 
+            textAlign: 'center',
+            backgroundColor: '#fff9c4',
+            borderRadius: '16px',
+            border: '1px solid #e0e0e0'
+          }}>
+            <TaskIcon sx={{ fontSize: 64, color: '#f57c00', mb: 2 }} />
+            <Typography variant="h6" sx={{ color: '#333', mb: 1, fontWeight: 500 }}>
+              No tasks yet
+            </Typography>
+            <Typography sx={{ color: '#666', mb: 3 }}>
+              Create your first task to get started organizing your work!
+            </Typography>
+            <Button 
+              variant="contained" 
+              startIcon={<AddIcon />}
+              onClick={() => setOpenDialog(true)}
+              sx={{
+                backgroundColor: '#ffc107',
+                color: '#333',
+                fontWeight: 500,
+                borderRadius: '8px',
+                '&:hover': { backgroundColor: '#f57c00' }
+              }}
+            >
+              Create Task
+            </Button>
+          </Paper>
+        ) : (
+          <Grid container spacing={2}>
+            {tasks.map((task) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={task._id}>
+                <TaskCard 
+                  task={task} 
+                  onDelete={() => handleDeleteTask(task._id)}
+                  onUpdate={(updatedTask) => handleUpdateTask(task._id, updatedTask)}
+                  onToggle={() => handleToggleTask(task._id)}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
-      <Fab
-        color="primary"
-        aria-label="add task"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => setOpenDialog(true)}
-      >
-        <AddIcon />
-      </Fab>
+        <Fab
+          color="primary"
+          aria-label="add task"
+          sx={{ 
+            position: 'fixed', 
+            bottom: 24, 
+            right: 24,
+            backgroundColor: '#ffc107',
+            color: '#333',
+            '&:hover': { backgroundColor: '#f57c00' }
+          }}
+          onClick={() => setOpenDialog(true)}
+        >
+          <AddIcon />
+        </Fab>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Create New Task</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Task Title"
-            fullWidth
-            variant="outlined"
-            value={newTask.title}
-            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-            sx={{ mb: 3 }}
-          />
-          
-          <Typography variant="h6" gutterBottom>
-            Checklist Items
-          </Typography>
-          
-          {newTask.checklist.map((item, index) => (
-            <Box key={index} display="flex" alignItems="center" mb={2}>
-              <TextField
-                fullWidth
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle sx={{ 
+            backgroundColor: '#1a1a1a', 
+            color: '#ffc107',
+            borderBottom: '1px solid #333'
+          }}>
+            Create New Task
+          </DialogTitle>
+          <DialogContent sx={{ 
+            backgroundColor: '#1a1a1a', 
+            pt: 2,
+            '& .MuiTextField-root': {
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#000000',
+                '& fieldset': {
+                  borderColor: '#555'
+                },
+                '&:hover fieldset': {
+                  borderColor: '#ffc107'
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#ffc107'
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: '#fff9c4',
+                '&.Mui-focused': {
+                  color: '#ffc107'
+                }
+              },
+              '& .MuiOutlinedInput-input': {
+                color: 'white'
+              }
+            }
+          }}>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Task Title"
+              fullWidth
+              variant="outlined"
+              value={newTask.title}
+              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+              sx={{ mb: 3 }}
+              placeholder="What needs to be done?"
+            />
+            
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" sx={{ color: '#ffc107' }}>
+                Checklist Items
+              </Typography>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={addChecklistItem}
                 variant="outlined"
                 size="small"
-                placeholder={`Item ${index + 1}`}
-                value={item}
-                onChange={(e) => updateChecklistItem(index, e.target.value)}
-              />
-              <IconButton 
-                onClick={() => removeChecklistItem(index)}
-                disabled={newTask.checklist.length === 1}
+                sx={{
+                  borderColor: '#ffc107',
+                  color: '#ffc107',
+                  '&:hover': { 
+                    borderColor: '#f57c00', 
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    color: '#f57c00'
+                  }
+                }}
               >
-                <DeleteIcon />
-              </IconButton>
+                Add Item
+              </Button>
             </Box>
-          ))}
-          
-          <Button
-            startIcon={<AddIcon />}
-            onClick={addChecklistItem}
-            variant="outlined"
-            size="small"
+            
+            {newTask.checklist.map((item, index) => (
+              <Box key={index} display="flex" alignItems="center" mb={2}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  placeholder={`Item ${index + 1}`}
+                  value={item}
+                  onChange={(e) => updateChecklistItem(index, e.target.value)}
+                />
+                <IconButton 
+                  onClick={() => removeChecklistItem(index)}
+                  disabled={newTask.checklist.length === 1}
+                  sx={{ ml: 1, color: '#f44336' }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            ))}
+          </DialogContent>
+          <DialogActions sx={{ 
+            backgroundColor: '#1a1a1a',
+            borderTop: '1px solid #333'
+          }}>
+            <Button 
+              onClick={() => setOpenDialog(false)} 
+              sx={{ color: '#fff9c4' }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateTask} 
+              variant="contained"
+              sx={{
+                backgroundColor: '#ffc107',
+                color: '#1a1a1a',
+                fontWeight: 600,
+                '&:hover': { backgroundColor: '#f57c00' }
+              }}
+            >
+              Create Task
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Success/Error Messages */}
+        <Snackbar 
+          open={!!success} 
+          autoHideDuration={4000} 
+          onClose={() => setSuccess('')}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        >
+          <Alert 
+            onClose={() => setSuccess('')} 
+            severity="success"
+            sx={{ backgroundColor: '#4caf50' }}
           >
-            Add Item
-          </Button>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateTask} variant="contained">Create Task</Button>
-        </DialogActions>
-      </Dialog>
+            {success}
+          </Alert>
+        </Snackbar>
 
-      {/* Success/Error Messages */}
-      <Snackbar 
-        open={!!success} 
-        autoHideDuration={4000} 
-        onClose={() => setSuccess('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Alert onClose={() => setSuccess('')} severity="success">
-          {success}
-        </Alert>
-      </Snackbar>
-
-      <Snackbar 
-        open={!!error} 
-        autoHideDuration={6000} 
-        onClose={() => setError('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Alert onClose={() => setError('')} severity="error">
-          {error}
-        </Alert>
-      </Snackbar>
-    </Container>
+        <Snackbar 
+          open={!!error} 
+          autoHideDuration={6000} 
+          onClose={() => setError('')}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        >
+          <Alert 
+            onClose={() => setError('')} 
+            severity="error"
+            sx={{ backgroundColor: '#f44336' }}
+          >
+            {error}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </Box>
   );
 }
 

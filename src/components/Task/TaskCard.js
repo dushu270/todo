@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material';
 
 function TaskCard({ task, onDelete, onUpdate }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editTask, setEditTask] = useState({
     title: task.title,
@@ -90,79 +90,105 @@ function TaskCard({ task, onDelete, onUpdate }) {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
+
+  // Google Keep style colors
+  const cardColors = [
+    '#fff9c4', // Light yellow
+    '#f8bbd9', // Light pink
+    '#e1f5fe', // Light blue
+    '#f3e5f5', // Light purple
+    '#e8f5e8', // Light green
+    '#fff3e0', // Light orange
+  ];
+  
+  const cardColor = cardColors[Math.abs(task.title.charCodeAt(0)) % cardColors.length];
 
   return (
     <>
       <Card 
-        elevation={2}
+        elevation={1}
         sx={{ 
-          height: '100%', 
+          minHeight: '120px',
+          maxHeight: expanded ? 'none' : '200px',
           display: 'flex', 
           flexDirection: 'column',
-          opacity: isTaskCompleted ? 0.8 : 1,
-          border: isTaskCompleted ? '2px solid #4caf50' : 'none'
+          backgroundColor: isTaskCompleted ? '#f5f5f5' : cardColor,
+          border: '1px solid #e0e0e0',
+          borderRadius: '12px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: 'pointer',
+          '&:hover': {
+            elevation: 3,
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          },
+          opacity: isTaskCompleted ? 0.7 : 1,
         }}
+        onClick={() => setExpanded(!expanded)}
       >
-        <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+        <CardContent sx={{ flexGrow: 1, p: 2, pb: 1 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
             <Typography 
-              variant="h6" 
+              variant="subtitle1" 
               component="h3" 
               sx={{ 
                 textDecoration: isTaskCompleted ? 'line-through' : 'none',
-                color: isTaskCompleted ? 'text.secondary' : 'text.primary',
-                wordBreak: 'break-word'
+                color: isTaskCompleted ? '#666' : '#333',
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                lineHeight: 1.3,
+                wordBreak: 'break-word',
+                flex: 1,
+                mr: 1
               }}
             >
               {task.title}
             </Typography>
             {isTaskCompleted && (
-              <CheckCircleIcon sx={{ color: 'success.main', ml: 1 }} />
+              <CheckCircleIcon sx={{ color: '#4caf50', fontSize: '1.2rem' }} />
             )}
           </Box>
 
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
             <Chip 
               size="small"
-              label={`${completedItems}/${totalItems} completed`}
-              color={isTaskCompleted ? 'success' : 'primary'}
-              variant="outlined"
+              label={`${completedItems}/${totalItems}`}
+              sx={{
+                backgroundColor: isTaskCompleted ? '#4caf50' : '#ffc107',
+                color: isTaskCompleted ? 'white' : '#333',
+                fontSize: '0.7rem',
+                height: '20px',
+                '& .MuiChip-label': { px: 1 }
+              }}
             />
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>
               {formatDate(task.createdAt)}
             </Typography>
           </Box>
 
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="body2" color="text.secondary">
-              Checklist ({completionPercentage}%)
-            </Typography>
-            <IconButton 
-              size="small" 
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-          </Box>
-
-          <Collapse in={expanded}>
-            <Divider sx={{ mb: 2 }} />
-            <Box>
-              {task.checklist.map((item, index) => (
+          <Collapse in={expanded} timeout={300}>
+            <Divider sx={{ mb: 1.5, backgroundColor: '#ddd' }} />
+            <Box sx={{ maxHeight: '200px', overflowY: 'auto' }}>
+              {task.checklist.slice(0, expanded ? task.checklist.length : 3).map((item, index) => (
                 <FormControlLabel
                   key={index}
                   control={
                     <Checkbox
                       checked={item.completed}
-                      onChange={(e) => handleChecklistChange(index, e.target.checked)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleChecklistChange(index, e.target.checked);
+                      }}
                       size="small"
-                      icon={<RadioButtonUncheckedIcon />}
-                      checkedIcon={<CheckCircleIcon />}
+                      icon={<RadioButtonUncheckedIcon sx={{ fontSize: '1.2rem', color: '#ffc107' }} />}
+                      checkedIcon={<CheckCircleIcon sx={{ fontSize: '1.2rem', color: '#4caf50' }} />}
+                      sx={{ 
+                        p: 0,
+                        mr: 1
+                      }}
                     />
                   }
                   label={
@@ -170,8 +196,12 @@ function TaskCard({ task, onDelete, onUpdate }) {
                       variant="body2"
                       sx={{
                         textDecoration: item.completed ? 'line-through' : 'none',
-                        color: item.completed ? 'text.secondary' : 'text.primary',
-                        wordBreak: 'break-word'
+                        color: item.completed ? '#666' : '#333',
+                        fontSize: '0.8rem',
+                        lineHeight: '1.2rem',
+                        wordBreak: 'break-word',
+                        m: 0,
+                        p: 0
                       }}
                     >
                       {item.text}
@@ -179,33 +209,144 @@ function TaskCard({ task, onDelete, onUpdate }) {
                   }
                   sx={{ 
                     display: 'flex', 
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
                     ml: 0,
+                    mr: 0,
                     mb: 0.5,
-                    width: '100%'
+                    width: '100%',
+                    m: 0,
+                    '& .MuiFormControlLabel-label': {
+                      m: 0,
+                      p: 0
+                    }
                   }}
+                  onClick={(e) => e.stopPropagation()}
                 />
               ))}
+              {!expanded && task.checklist.length > 3 && (
+                <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem', ml: 1 }}>
+                  +{task.checklist.length - 3} more items
+                </Typography>
+              )}
             </Box>
           </Collapse>
+
+          {!expanded && (
+            <Box sx={{ mt: 1 }}>
+              {task.checklist.slice(0, 2).map((item, index) => (
+                <Box key={index} display="flex" alignItems="center" mb={0.3}>
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: item.completed ? '#4caf50' : '#ffc107',
+                      mr: 1,
+                      flexShrink: 0
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#666',
+                      fontSize: '0.75rem',
+                      textDecoration: item.completed ? 'line-through' : 'none',
+                      opacity: item.completed ? 0.6 : 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {item.text}
+                  </Typography>
+                </Box>
+              ))}
+              {task.checklist.length > 2 && (
+                <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem', ml: 1.75 }}>
+                  +{task.checklist.length - 2} more
+                </Typography>
+              )}
+            </Box>
+          )}
         </CardContent>
 
-        <CardActions sx={{ justifyContent: 'space-between', pt: 0 }}>
+        <CardActions sx={{ justifyContent: 'space-between', p: 1, pt: 0 }}>
+          <IconButton 
+            size="small" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+            sx={{ 
+              color: '#666',
+              transition: 'transform 0.2s',
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)'
+            }}
+          >
+            <ExpandMoreIcon fontSize="small" />
+          </IconButton>
           <Box>
-            <IconButton size="small" color="primary" onClick={handleEditOpen}>
-              <EditIcon />
+            <IconButton 
+              size="small" 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditOpen();
+              }}
+              sx={{ color: '#666', mr: 0.5 }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              sx={{ color: '#f44336' }}
+            >
+              <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
-          <IconButton size="small" color="error" onClick={onDelete}>
-            <DeleteIcon />
-          </IconButton>
         </CardActions>
       </Card>
 
       {/* Edit Task Dialog */}
       <Dialog open={editOpen} onClose={handleEditCancel} maxWidth="md" fullWidth>
-        <DialogTitle>Edit Task</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ 
+          backgroundColor: '#1a1a1a', 
+          color: '#ffc107',
+          borderBottom: '1px solid #333'
+        }}>
+          Edit Task
+        </DialogTitle>
+        <DialogContent sx={{ 
+          backgroundColor: '#1a1a1a', 
+          pt: 2,
+          '& .MuiTextField-root': {
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#000000',
+              '& fieldset': {
+                borderColor: '#555'
+              },
+              '&:hover fieldset': {
+                borderColor: '#ffc107'
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#ffc107'
+              }
+            },
+            '& .MuiInputLabel-root': {
+              color: '#fff9c4',
+              '&.Mui-focused': {
+                color: '#ffc107'
+              }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: 'white'
+            }
+          }
+        }}>
           <TextField
             autoFocus
             margin="dense"
@@ -218,7 +359,7 @@ function TaskCard({ task, onDelete, onUpdate }) {
           />
           
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6">
+            <Typography variant="h6" sx={{ color: '#ffc107' }}>
               Checklist Items
             </Typography>
             <Button
@@ -226,6 +367,15 @@ function TaskCard({ task, onDelete, onUpdate }) {
               onClick={addEditChecklistItem}
               variant="outlined"
               size="small"
+              sx={{ 
+                borderColor: '#ffc107',
+                color: '#ffc107',
+                '&:hover': { 
+                  borderColor: '#f57c00', 
+                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                  color: '#f57c00'
+                }
+              }}
             >
               Add Item
             </Button>
@@ -237,6 +387,16 @@ function TaskCard({ task, onDelete, onUpdate }) {
                 checked={item.completed}
                 onChange={(e) => updateEditChecklistItem(index, 'completed', e.target.checked)}
                 size="small"
+                icon={<RadioButtonUncheckedIcon sx={{ fontSize: '1.2rem', color: '#ffc107' }} />}
+                checkedIcon={<CheckCircleIcon sx={{ fontSize: '1.2rem', color: '#4caf50' }} />}
+                sx={{
+                  color: '#ffc107',
+                  p: 0,
+                  mr: 1,
+                  '&.Mui-checked': {
+                    color: '#4caf50'
+                  }
+                }}
               />
               <TextField
                 fullWidth
@@ -245,22 +405,41 @@ function TaskCard({ task, onDelete, onUpdate }) {
                 placeholder={`Item ${index + 1}`}
                 value={item.text}
                 onChange={(e) => updateEditChecklistItem(index, 'text', e.target.value)}
-                sx={{ mx: 1 }}
+                sx={{ mr: 1 }}
               />
               <IconButton 
                 onClick={() => removeEditChecklistItem(index)}
                 disabled={editTask.checklist.length === 1}
                 size="small"
-                color="error"
+                sx={{ color: '#f44336' }}
               >
                 <RemoveIcon />
               </IconButton>
             </Box>
           ))}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleEditCancel}>Cancel</Button>
-          <Button onClick={handleEditSave} variant="contained">Save Changes</Button>
+        <DialogActions sx={{ 
+          backgroundColor: '#1a1a1a',
+          borderTop: '1px solid #333'
+        }}>
+          <Button 
+            onClick={handleEditCancel}
+            sx={{ color: '#fff9c4' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleEditSave} 
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#ffc107',
+              color: '#1a1a1a',
+              fontWeight: 600,
+              '&:hover': { backgroundColor: '#f57c00' }
+            }}
+          >
+            Save Changes
+          </Button>
         </DialogActions>
       </Dialog>
     </>

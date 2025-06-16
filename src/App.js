@@ -10,16 +10,91 @@ import { CircularProgress, Box } from '@mui/material';
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#1976d2',
+      main: '#ffc107', // Yellow primary
+      dark: '#f57c00',
+      light: '#fff9c4',
     },
     secondary: {
-      main: '#dc004e',
+      main: '#4caf50', // Green for success states
+      dark: '#388e3c',
+      light: '#c8e6c9',
+    },
+    background: {
+      default: '#1a1a1a', // Dark black background
+      paper: '#2d2d2d', // Dark gray for cards
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: '#fff9c4',
+    },
+    error: {
+      main: '#f44336',
+    },
+    warning: {
+      main: '#ff9800',
+    },
+    info: {
+      main: '#2196f3',
+    },
+    success: {
+      main: '#4caf50',
     },
   },
   typography: {
-    fontFamily: 'Roboto, Arial, sans-serif',
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontWeight: 600,
+    },
+    h2: {
+      fontWeight: 600,
+    },
+    h3: {
+      fontWeight: 600,
+    },
+    h4: {
+      fontWeight: 500,
+    },
+    h5: {
+      fontWeight: 500,
+    },
+    h6: {
+      fontWeight: 500,
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#1a1a1a',
+          color: '#ffffff',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#2d2d2d',
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        contained: {
+          backgroundColor: '#ffc107',
+          color: '#1a1a1a',
+          fontWeight: 600,
+          '&:hover': {
+            backgroundColor: '#f57c00',
+          },
+        },
+      },
+    },
   },
 });
 
@@ -45,8 +120,9 @@ function App() {
           justifyContent="center"
           alignItems="center"
           minHeight="100vh"
+          sx={{ backgroundColor: '#1a1a1a' }}
         >
-          <CircularProgress />
+          <CircularProgress sx={{ color: '#ffc107' }} size={60} />
         </Box>
       </ThemeProvider>
     );
