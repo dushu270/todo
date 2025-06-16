@@ -36,6 +36,13 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Debug: Log environment variables (remove after fixing)
+console.log('🔍 Debug - Environment variables:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'UNDEFINED');
+console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? 'SET' : 'UNDEFINED');
+
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, {
   // Removed deprecated options

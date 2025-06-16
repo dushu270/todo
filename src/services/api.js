@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { auth } from '../config/firebase';
 
-// API Configuration - Update this with your Render backend URL after deployment
+// API Configuration - Updated with actual Render backend URL
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-backend-url.onrender.com/api'  // Replace with your actual Render URL
+  ? 'https://todo-erbe.onrender.com/api'  // ✅ Your actual Render URL
   : 'http://localhost:4000/api';
 
 const api = axios.create({
