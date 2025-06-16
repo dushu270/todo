@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { todoAPI } from '../../services/api';
 import {
   Container,
   Typography,
@@ -16,7 +17,10 @@ import {
   TextField,
   IconButton,
   Chip,
-  Paper
+  Paper,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -31,62 +35,112 @@ import TaskCard from '../Task/TaskCard';
 function NamespaceView() {
   const { namespaceId } = useParams();
   const navigate = useNavigate();
-  const [namespaceName, setNamespaceName] = useState('');
+  const [namespace, setNamespace] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
     checklist: ['']
   });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
+  // Load namespace and tasks
   useEffect(() => {
-    // Mock data - replace with API call
-    const namespaceNames = {
-      '1': 'Office',
-      '2': 'Home',
-      '3': 'Personal'
-    };
-    setNamespaceName(namespaceNames[namespaceId] || 'Unknown');
-    
-    // Mock tasks
-    setTasks([
-      {
-        id: '1',
-        title: 'Sample Task',
-        checklist: [
-          { text: 'First item', completed: true },
-          { text: 'Second item', completed: false },
-          { text: 'Third item', completed: false }
-        ],
-        createdAt: new Date().toISOString()
-      }
-    ]);
+    loadNamespaceAndTasks();
   }, [namespaceId]);
 
-  const handleCreateTask = () => {
-    if (newTask.title.trim()) {
-      const task = {
-        id: Date.now().toString(),
-        title: newTask.title.trim(),
-        checklist: newTask.checklist
-          .filter(item => item.trim())
-          .map(text => ({ text: text.trim(), completed: false })),
-        createdAt: new Date().toISOString()
-      };
-      setTasks([...tasks, task]);
-      setNewTask({ title: '', checklist: [''] });
-      setOpenDialog(false);
+  const loadNamespaceAndTasks = async () => {
+    try {
+      setLoading(true);
+      
+      // Load namespace details
+      const namespaceResponse = await todoAPI.getNamespaces();
+      const currentNamespace = namespaceResponse.data.namespaces.find(
+        ns => ns._id === namespaceId
+      );
+      
+      if (!currentNamespace) {
+        setError('Namespace not found');
+        navigate('/dashboard');
+        return;
+      }
+      
+      setNamespace(currentNamespace);
+      
+      // Load tasks for this namespace
+      const tasksResponse = await todoAPI.getTasks({ namespaceId });
+      setTasks(tasksResponse.data.tasks || []);
+      
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('Failed to load tasks');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+  const handleCreateTask = async () => {
+    if (!newTask.title.trim()) return;
+
+    try {
+      const taskData = {
+        title: newTask.title.trim(),
+        namespaceId: namespaceId,
+        checklist: newTask.checklist
+          .filter(item => item.trim())
+          .map(text => ({ text: text.trim(), completed: false }))
+      };
+
+      const response = await todoAPI.createTask(taskData);
+      setTasks([...tasks, response.data.task]);
+      setNewTask({ title: '', checklist: [''] });
+      setOpenDialog(false);
+      setSuccess('Task created successfully!');
+    } catch (error) {
+      console.error('Error creating task:', error);
+      setError('Failed to create task');
+    }
   };
 
-  const handleUpdateTask = (taskId, updatedTask) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, ...updatedTask } : task
-    ));
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) {
+      return;
+    }
+
+    try {
+      await todoAPI.deleteTask(taskId);
+      setTasks(tasks.filter(task => task._id !== taskId));
+      setSuccess('Task deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      setError('Failed to delete task');
+    }
+  };
+
+  const handleUpdateTask = async (taskId, updatedTask) => {
+    try {
+      const response = await todoAPI.updateTask(taskId, updatedTask);
+      setTasks(tasks.map(task => 
+        task._id === taskId ? response.data.task : task
+      ));
+    } catch (error) {
+      console.error('Error updating task:', error);
+      setError('Failed to update task');
+    }
+  };
+
+  const handleToggleTask = async (taskId) => {
+    try {
+      const response = await todoAPI.toggleTask(taskId);
+      setTasks(tasks.map(task => 
+        task._id === taskId ? response.data.task : task
+      ));
+    } catch (error) {
+      console.error('Error toggling task:', error);
+      setError('Failed to update task');
+    }
   };
 
   const addChecklistItem = () => {
@@ -107,9 +161,23 @@ function NamespaceView() {
     setNewTask({ ...newTask, checklist: updatedChecklist });
   };
 
-  const completedTasks = tasks.filter(task => 
-    task.checklist.length > 0 && task.checklist.every(item => item.completed)
-  ).length;
+  const completedTasks = tasks.filter(task => task.completed).length;
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!namespace) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Alert severity="error">Namespace not found</Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container sx={{ mt: 2, mb: 4 }}>
@@ -119,8 +187,13 @@ function NamespaceView() {
         </IconButton>
         <Box flexGrow={1}>
           <Typography variant="h4" component="h1">
-            {namespaceName}
+            {namespace.name}
           </Typography>
+          {namespace.description && (
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+              {namespace.description}
+            </Typography>
+          )}
           <Box display="flex" gap={1} mt={1}>
             <Chip 
               icon={<TaskIcon />}
@@ -144,18 +217,26 @@ function NamespaceView() {
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No tasks yet
           </Typography>
-          <Typography color="text.secondary">
-            Create your first task to get started!
+          <Typography color="text.secondary" mb={3}>
+            Create your first task to get started organizing your work!
           </Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />}
+            onClick={() => setOpenDialog(true)}
+          >
+            Create Task
+          </Button>
         </Paper>
       ) : (
         <Grid container spacing={3}>
           {tasks.map((task) => (
-            <Grid item xs={12} md={6} lg={4} key={task.id}>
+            <Grid item xs={12} md={6} lg={4} key={task._id}>
               <TaskCard 
                 task={task} 
-                onDelete={() => handleDeleteTask(task.id)}
-                onUpdate={(updatedTask) => handleUpdateTask(task.id, updatedTask)}
+                onDelete={() => handleDeleteTask(task._id)}
+                onUpdate={(updatedTask) => handleUpdateTask(task._id, updatedTask)}
+                onToggle={() => handleToggleTask(task._id)}
               />
             </Grid>
           ))}
@@ -222,6 +303,29 @@ function NamespaceView() {
           <Button onClick={handleCreateTask} variant="contained">Create Task</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success/Error Messages */}
+      <Snackbar 
+        open={!!success} 
+        autoHideDuration={4000} 
+        onClose={() => setSuccess('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={() => setSuccess('')} severity="success">
+          {success}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={6000} 
+        onClose={() => setError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={() => setError('')} severity="error">
+          {error}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

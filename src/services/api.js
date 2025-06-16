@@ -1,7 +1,10 @@
 import axios from 'axios';
+import { auth } from '../config/firebase';
 
-// TODO: Replace with your backend URL when deployed
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// API Configuration - Update this with your Render backend URL after deployment
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-backend-url.onrender.com/api'  // Replace with your actual Render URL
+  : 'http://localhost:4000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,31 +13,60 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests if available
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Add Firebase auth token to requests
+api.interceptors.request.use(async (config) => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (error) {
+    console.error('Error getting auth token:', error);
   }
   return config;
 });
 
-// API functions
+// Handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - redirect to login
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// API functions matching your backend endpoints
 export const todoAPI = {
+  // Auth operations
+  registerUser: () => api.post('/auth/register'),
+  getUserProfile: () => api.get('/auth/profile'),
+  
   // Namespace operations
   getNamespaces: () => api.get('/namespaces'),
-  createNamespace: (name) => api.post('/namespaces', { name }),
+  createNamespace: (data) => api.post('/namespaces', data),
+  updateNamespace: (id, data) => api.put(`/namespaces/${id}`, data),
   deleteNamespace: (id) => api.delete(`/namespaces/${id}`),
+  reorderNamespaces: (namespaceIds) => api.post('/namespaces/reorder', { namespaceIds }),
 
   // Task operations
-  getTasks: (namespaceId) => api.get(`/namespaces/${namespaceId}/tasks`),
-  createTask: (namespaceId, task) => api.post(`/namespaces/${namespaceId}/tasks`, task),
-  updateTask: (namespaceId, taskId, updates) => api.put(`/namespaces/${namespaceId}/tasks/${taskId}`, updates),
-  deleteTask: (namespaceId, taskId) => api.delete(`/namespaces/${namespaceId}/tasks/${taskId}`),
+  getTasks: (params = {}) => api.get('/tasks', { params }),
+  getTask: (id) => api.get(`/tasks/${id}`),
+  createTask: (data) => api.post('/tasks', data),
+  updateTask: (id, data) => api.put(`/tasks/${id}`, data),
+  deleteTask: (id) => api.delete(`/tasks/${id}`),
+  toggleTask: (id) => api.patch(`/tasks/${id}/toggle`),
   
   // Checklist operations
-  updateChecklistItem: (namespaceId, taskId, itemIndex, completed) => 
-    api.put(`/namespaces/${namespaceId}/tasks/${taskId}/checklist/${itemIndex}`, { completed }),
+  toggleChecklistItem: (taskId, itemId) => api.patch(`/tasks/${taskId}/checklist/${itemId}/toggle`),
+  addChecklistItem: (taskId, data) => api.post(`/tasks/${taskId}/checklist`, data),
+  deleteChecklistItem: (taskId, itemId) => api.delete(`/tasks/${taskId}/checklist/${itemId}`),
+  
+  // Statistics
+  getTaskStats: () => api.get('/tasks/stats/summary'),
 };
 
 export default api; 

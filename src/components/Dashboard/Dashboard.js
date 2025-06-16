@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import { todoAPI } from '../../services/api';
 import {
   Container,
   AppBar,
@@ -21,7 +22,10 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Chip
+  Chip,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   Logout as LogoutIcon,
@@ -34,13 +38,45 @@ import NamespaceView from './NamespaceView';
 
 function Dashboard({ user }) {
   const navigate = useNavigate();
-  const [namespaces, setNamespaces] = useState([
-    { id: '1', name: 'Office', taskCount: 0 },
-    { id: '2', name: 'Home', taskCount: 0 },
-    { id: '3', name: 'Personal', taskCount: 0 }
-  ]);
+  const [namespaces, setNamespaces] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [newNamespaceName, setNewNamespaceName] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Register user with backend on first load
+  useEffect(() => {
+    const registerUser = async () => {
+      try {
+        await todoAPI.registerUser();
+      } catch (error) {
+        console.error('User registration error:', error);
+      }
+    };
+
+    if (user) {
+      registerUser();
+    }
+  }, [user]);
+
+  // Load namespaces
+  useEffect(() => {
+    loadNamespaces();
+  }, []);
+
+  const loadNamespaces = async () => {
+    try {
+      setLoading(true);
+      const response = await todoAPI.getNamespaces();
+      setNamespaces(response.data.namespaces || []);
+    } catch (error) {
+      console.error('Error loading namespaces:', error);
+      setError('Failed to load namespaces');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -50,26 +86,59 @@ function Dashboard({ user }) {
     }
   };
 
-  const handleCreateNamespace = () => {
-    if (newNamespaceName.trim()) {
-      const newNamespace = {
-        id: Date.now().toString(),
+  const handleCreateNamespace = async () => {
+    if (!newNamespaceName.trim()) return;
+
+    try {
+      const response = await todoAPI.createNamespace({
         name: newNamespaceName.trim(),
-        taskCount: 0
-      };
-      setNamespaces([...namespaces, newNamespace]);
+        description: '',
+        color: '#1976d2',
+        icon: 'FolderIcon'
+      });
+      
+      setNamespaces([...namespaces, response.data.namespace]);
       setNewNamespaceName('');
       setOpenDialog(false);
+      setSuccess('Namespace created successfully!');
+    } catch (error) {
+      console.error('Error creating namespace:', error);
+      setError('Failed to create namespace');
     }
   };
 
-  const handleDeleteNamespace = (namespaceId) => {
-    setNamespaces(namespaces.filter(ns => ns.id !== namespaceId));
+  const handleDeleteNamespace = async (namespaceId, event) => {
+    event.stopPropagation();
+    
+    if (!window.confirm('Are you sure you want to delete this namespace?')) {
+      return;
+    }
+
+    try {
+      await todoAPI.deleteNamespace(namespaceId);
+      setNamespaces(namespaces.filter(ns => ns._id !== namespaceId));
+      setSuccess('Namespace deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting namespace:', error);
+      if (error.response?.status === 400) {
+        setError('Cannot delete namespace with tasks. Please delete all tasks first.');
+      } else {
+        setError('Failed to delete namespace');
+      }
+    }
   };
 
   const handleNamespaceClick = (namespaceId) => {
     navigate(`/dashboard/namespace/${namespaceId}`);
   };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -100,50 +169,77 @@ function Dashboard({ user }) {
               />
             </Box>
             
-            <Grid container spacing={3}>
-              {namespaces.map((namespace) => (
-                <Grid item xs={12} sm={6} md={4} key={namespace.id}>
-                  <Card 
-                    elevation={2}
-                    sx={{ 
-                      height: '100%', 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        elevation: 4,
-                        transform: 'translateY(-2px)',
-                        transition: 'all 0.2s ease-in-out'
-                      }
-                    }}
-                    onClick={() => handleNamespaceClick(namespace.id)}
-                  >
-                    <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
-                      <FolderIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-                      <Typography variant="h6" component="h2" gutterBottom>
-                        {namespace.name}
-                      </Typography>
-                      <Typography color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                        <TaskIcon fontSize="small" />
-                        {namespace.taskCount} tasks
-                      </Typography>
-                    </CardContent>
-                    <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
-                      <IconButton 
-                        color="error" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteNamespace(namespace.id);
-                        }}
-                        size="small"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            {namespaces.length === 0 ? (
+              <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <FolderIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No namespaces yet
+                </Typography>
+                <Typography color="text.secondary" mb={3}>
+                  Create your first namespace to organize your tasks
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  startIcon={<AddIcon />}
+                  onClick={() => setOpenDialog(true)}
+                >
+                  Create Namespace
+                </Button>
+              </Paper>
+            ) : (
+              <Grid container spacing={3}>
+                {namespaces.map((namespace) => (
+                  <Grid item xs={12} sm={6} md={4} key={namespace._id}>
+                    <Card 
+                      elevation={2}
+                      sx={{ 
+                        height: '100%', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          elevation: 4,
+                          transform: 'translateY(-2px)',
+                          transition: 'all 0.2s ease-in-out'
+                        }
+                      }}
+                      onClick={() => handleNamespaceClick(namespace._id)}
+                    >
+                      <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
+                        <FolderIcon 
+                          sx={{ 
+                            fontSize: 48, 
+                            color: namespace.color || 'primary.main', 
+                            mb: 2 
+                          }} 
+                        />
+                        <Typography variant="h6" component="h2" gutterBottom>
+                          {namespace.name}
+                        </Typography>
+                        <Typography color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <TaskIcon fontSize="small" />
+                          {namespace.taskCount || 0} tasks
+                        </Typography>
+                        {namespace.description && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            {namespace.description}
+                          </Typography>
+                        )}
+                      </CardContent>
+                      <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
+                        <IconButton 
+                          color="error" 
+                          onClick={(e) => handleDeleteNamespace(namespace._id, e)}
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </CardActions>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
 
             <Fab
               color="primary"
@@ -180,6 +276,29 @@ function Dashboard({ user }) {
           </Container>
         } />
       </Routes>
+
+      {/* Success/Error Messages */}
+      <Snackbar 
+        open={!!success} 
+        autoHideDuration={4000} 
+        onClose={() => setSuccess('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={() => setSuccess('')} severity="success">
+          {success}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={6000} 
+        onClose={() => setError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={() => setError('')} severity="error">
+          {error}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
