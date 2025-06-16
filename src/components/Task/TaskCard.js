@@ -358,28 +358,9 @@ function TaskCard({ task, onDelete, onUpdate }) {
             sx={{ mb: 3 }}
           />
           
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6" sx={{ color: '#ffc107' }}>
-              Checklist Items
-            </Typography>
-            <Button
-              startIcon={<AddIcon />}
-              onClick={addEditChecklistItem}
-              variant="outlined"
-              size="small"
-              sx={{ 
-                borderColor: '#ffc107',
-                color: '#ffc107',
-                '&:hover': { 
-                  borderColor: '#f57c00', 
-                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                  color: '#f57c00'
-                }
-              }}
-            >
-              Add Item
-            </Button>
-          </Box>
+          <Typography variant="h6" sx={{ color: '#ffc107', mb: 2 }}>
+            Checklist Items
+          </Typography>
           
           {editTask.checklist.map((item, index) => (
             <Box key={index} display="flex" alignItems="center" mb={2}>
@@ -417,6 +398,26 @@ function TaskCard({ task, onDelete, onUpdate }) {
               </IconButton>
             </Box>
           ))}
+
+          {/* Centered Add Item Button */}
+          <Box display="flex" justifyContent="center" mt={2}>
+            <IconButton
+              onClick={addEditChecklistItem}
+              sx={{
+                backgroundColor: '#ffc107',
+                color: '#1a1a1a',
+                width: 40,
+                height: 40,
+                '&:hover': {
+                  backgroundColor: '#f57c00',
+                  transform: 'scale(1.1)'
+                },
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ 
           backgroundColor: '#1a1a1a',

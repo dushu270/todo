@@ -336,28 +336,9 @@ function NamespaceView() {
               placeholder="What needs to be done?"
             />
             
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6" sx={{ color: '#ffc107' }}>
-                Checklist Items
-              </Typography>
-              <Button
-                startIcon={<AddIcon />}
-                onClick={addChecklistItem}
-                variant="outlined"
-                size="small"
-                sx={{
-                  borderColor: '#ffc107',
-                  color: '#ffc107',
-                  '&:hover': { 
-                    borderColor: '#f57c00', 
-                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                    color: '#f57c00'
-                  }
-                }}
-              >
-                Add Item
-              </Button>
-            </Box>
+            <Typography variant="h6" sx={{ color: '#ffc107', mb: 2 }}>
+              Checklist Items
+            </Typography>
             
             {newTask.checklist.map((item, index) => (
               <Box key={index} display="flex" alignItems="center" mb={2}>
@@ -378,6 +359,26 @@ function NamespaceView() {
                 </IconButton>
               </Box>
             ))}
+
+            {/* Centered Add Item Button */}
+            <Box display="flex" justifyContent="center" mt={2}>
+              <IconButton
+                onClick={addChecklistItem}
+                sx={{
+                  backgroundColor: '#ffc107',
+                  color: '#1a1a1a',
+                  width: 40,
+                  height: 40,
+                  '&:hover': {
+                    backgroundColor: '#f57c00',
+                    transform: 'scale(1.1)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                <AddIcon />
+              </IconButton>
+            </Box>
           </DialogContent>
           <DialogActions sx={{ 
             backgroundColor: '#1a1a1a',
