@@ -24,7 +24,8 @@ const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? [
         'https://main.d2srwj9mjvfxk8.amplifyapp.com',
-        'https://d2srwj9mjvfxk8.amplifyapp.com'
+        'https://d2srwj9mjvfxk8.amplifyapp.com',
+        'https://todo.dushyanth.click'
       ]
     : ['http://localhost:3000'],
   credentials: true,
