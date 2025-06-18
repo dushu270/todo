@@ -172,57 +172,74 @@ function TaskCard({ task, onDelete, onUpdate }) {
           <Collapse in={expanded} timeout={300}>
             <Divider sx={{ mb: 1.5, backgroundColor: '#ddd' }} />
             <Box sx={{ maxHeight: '200px', overflowY: 'auto' }}>
-              {task.checklist.slice(0, expanded ? task.checklist.length : 3).map((item, index) => (
-                <FormControlLabel
-                  key={index}
-                  control={
-                    <Checkbox
-                      checked={item.completed}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleChecklistChange(index, e.target.checked);
-                      }}
-                      size="small"
-                      icon={<RadioButtonUncheckedIcon sx={{ fontSize: '1.2rem', color: '#ffc107' }} />}
-                      checkedIcon={<CheckCircleIcon sx={{ fontSize: '1.2rem', color: '#4caf50' }} />}
+              {(() => {
+                // Sort checklist: unchecked items first, checked items at bottom
+                const sortedChecklist = [...task.checklist].sort((a, b) => {
+                  if (a.completed === b.completed) return 0;
+                  return a.completed ? 1 : -1; // unchecked (false) comes first
+                });
+                
+                const itemsToShow = expanded ? sortedChecklist : sortedChecklist.slice(0, 3);
+                
+                return itemsToShow.map((item, sortedIndex) => {
+                  // Find original index for the onChange handler
+                  const originalIndex = task.checklist.findIndex(originalItem => 
+                    originalItem.text === item.text && originalItem.completed === item.completed
+                  );
+                  
+                  return (
+                    <FormControlLabel
+                      key={`${originalIndex}-${item.text}`}
+                      control={
+                        <Checkbox
+                          checked={item.completed}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleChecklistChange(originalIndex, e.target.checked);
+                          }}
+                          size="small"
+                          icon={<RadioButtonUncheckedIcon sx={{ fontSize: '1.2rem', color: '#ffc107' }} />}
+                          checkedIcon={<CheckCircleIcon sx={{ fontSize: '1.2rem', color: '#4caf50' }} />}
+                          sx={{ 
+                            p: 0,
+                            mr: 1
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            textDecoration: item.completed ? 'line-through' : 'none',
+                            color: item.completed ? '#666' : '#333',
+                            fontSize: '0.8rem',
+                            lineHeight: '1.2rem',
+                            wordBreak: 'break-word',
+                            m: 0,
+                            p: 0
+                          }}
+                        >
+                          {item.text}
+                        </Typography>
+                      }
                       sx={{ 
-                        p: 0,
-                        mr: 1
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        textDecoration: item.completed ? 'line-through' : 'none',
-                        color: item.completed ? '#666' : '#333',
-                        fontSize: '0.8rem',
-                        lineHeight: '1.2rem',
-                        wordBreak: 'break-word',
+                        display: 'flex', 
+                        alignItems: 'center',
+                        ml: 0,
+                        mr: 0,
+                        mb: 0.5,
+                        width: '100%',
                         m: 0,
-                        p: 0
+                        '& .MuiFormControlLabel-label': {
+                          m: 0,
+                          p: 0
+                        }
                       }}
-                    >
-                      {item.text}
-                    </Typography>
-                  }
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    ml: 0,
-                    mr: 0,
-                    mb: 0.5,
-                    width: '100%',
-                    m: 0,
-                    '& .MuiFormControlLabel-label': {
-                      m: 0,
-                      p: 0
-                    }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ))}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  );
+                });
+              })()}
               {!expanded && task.checklist.length > 3 && (
                 <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem', ml: 1 }}>
                   +{task.checklist.length - 3} more items
@@ -233,35 +250,43 @@ function TaskCard({ task, onDelete, onUpdate }) {
 
           {!expanded && (
             <Box sx={{ mt: 1 }}>
-              {task.checklist.slice(0, 2).map((item, index) => (
-                <Box key={index} display="flex" alignItems="center" mb={0.3}>
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      backgroundColor: item.completed ? '#4caf50' : '#ffc107',
-                      mr: 1,
-                      flexShrink: 0
-                    }}
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#666',
-                      fontSize: '0.75rem',
-                      textDecoration: item.completed ? 'line-through' : 'none',
-                      opacity: item.completed ? 0.6 : 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      lineHeight: 1.2
-                    }}
-                  >
-                    {item.text}
-                  </Typography>
-                </Box>
-              ))}
+              {(() => {
+                // Sort checklist for preview: unchecked items first
+                const sortedChecklist = [...task.checklist].sort((a, b) => {
+                  if (a.completed === b.completed) return 0;
+                  return a.completed ? 1 : -1;
+                });
+                
+                return sortedChecklist.slice(0, 2).map((item, index) => (
+                  <Box key={`preview-${index}-${item.text}`} display="flex" alignItems="center" mb={0.3}>
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        backgroundColor: item.completed ? '#4caf50' : '#ffc107',
+                        mr: 1,
+                        flexShrink: 0
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#666',
+                        fontSize: '0.75rem',
+                        textDecoration: item.completed ? 'line-through' : 'none',
+                        opacity: item.completed ? 0.6 : 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        lineHeight: 1.2
+                      }}
+                    >
+                      {item.text}
+                    </Typography>
+                  </Box>
+                ));
+              })()}
               {task.checklist.length > 2 && (
                 <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem', ml: 1.75 }}>
                   +{task.checklist.length - 2} more
@@ -363,7 +388,7 @@ function TaskCard({ task, onDelete, onUpdate }) {
           </Typography>
           
           {editTask.checklist.map((item, index) => (
-            <Box key={index} display="flex" alignItems="center" mb={2}>
+            <Box key={`edit-${index}`} display="flex" alignItems="center" mb={2}>
               <Checkbox
                 checked={item.completed}
                 onChange={(e) => updateEditChecklistItem(index, 'completed', e.target.checked)}
@@ -386,7 +411,13 @@ function TaskCard({ task, onDelete, onUpdate }) {
                 placeholder={`Item ${index + 1}`}
                 value={item.text}
                 onChange={(e) => updateEditChecklistItem(index, 'text', e.target.value)}
-                sx={{ mr: 1 }}
+                sx={{ 
+                  mr: 1,
+                  '& .MuiOutlinedInput-input': {
+                    textDecoration: item.completed ? 'line-through' : 'none',
+                    color: item.completed ? '#999' : 'white'
+                  }
+                }}
               />
               <IconButton 
                 onClick={() => removeEditChecklistItem(index)}
