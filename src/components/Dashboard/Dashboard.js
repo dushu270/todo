@@ -39,6 +39,7 @@ import NamespaceView from './NamespaceView';
 function Dashboard({ user }) {
   const navigate = useNavigate();
   const [namespaces, setNamespaces] = useState([]);
+  const [namespaceTasks, setNamespaceTasks] = useState({});
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [newNamespaceName, setNewNamespaceName] = useState('');
@@ -60,16 +61,39 @@ function Dashboard({ user }) {
     }
   }, [user]);
 
-  // Load namespaces
+  // Load namespaces and their task counts
   useEffect(() => {
-    loadNamespaces();
+    loadNamespacesAndTasks();
   }, []);
 
-  const loadNamespaces = async () => {
+  const loadNamespacesAndTasks = async () => {
     try {
       setLoading(true);
       const response = await todoAPI.getNamespaces();
-      setNamespaces(response.data.namespaces || []);
+      const namespacesData = response.data.namespaces || [];
+      setNamespaces(namespacesData);
+      
+      // Load task counts for each namespace
+      const taskCounts = {};
+      for (const namespace of namespacesData) {
+        try {
+          const tasksResponse = await todoAPI.getTasks({ namespaceId: namespace._id });
+          const tasks = tasksResponse.data.tasks || [];
+          taskCounts[namespace._id] = {
+            total: tasks.length,
+            completed: tasks.filter(task => {
+              // Check if task is completed based on checklist completion
+              const completedItems = task.checklist.filter(item => item.completed).length;
+              const totalItems = task.checklist.length;
+              return totalItems > 0 && completedItems === totalItems;
+            }).length
+          };
+        } catch (error) {
+          console.error(`Error loading tasks for namespace ${namespace._id}:`, error);
+          taskCounts[namespace._id] = { total: 0, completed: 0 };
+        }
+      }
+      setNamespaceTasks(taskCounts);
     } catch (error) {
       console.error('Error loading namespaces:', error);
       setError('Failed to load namespaces');
@@ -90,41 +114,35 @@ function Dashboard({ user }) {
     if (!newNamespaceName.trim()) return;
 
     try {
-      const response = await todoAPI.createNamespace({
-        name: newNamespaceName.trim(),
-        description: '',
-        color: '#1976d2',
-        icon: 'FolderIcon'
-      });
-      
+      const response = await todoAPI.createNamespace({ name: newNamespaceName.trim() });
       setNamespaces([...namespaces, response.data.namespace]);
       setNewNamespaceName('');
       setOpenDialog(false);
-      setSuccess('Namespace created successfully!');
+      setSuccess('Workspace created successfully!');
+      // Reload to get task counts
+      loadNamespacesAndTasks();
     } catch (error) {
       console.error('Error creating namespace:', error);
-      setError('Failed to create namespace');
+      setError('Failed to create workspace');
     }
   };
 
   const handleDeleteNamespace = async (namespaceId, event) => {
     event.stopPropagation();
     
-    if (!window.confirm('Are you sure you want to delete this namespace?')) {
+    if (!window.confirm('Are you sure you want to delete this workspace? All tasks will be deleted.')) {
       return;
     }
 
     try {
       await todoAPI.deleteNamespace(namespaceId);
       setNamespaces(namespaces.filter(ns => ns._id !== namespaceId));
-      setSuccess('Namespace deleted successfully!');
+      setSuccess('Workspace deleted successfully!');
+      // Reload to update task counts
+      loadNamespacesAndTasks();
     } catch (error) {
       console.error('Error deleting namespace:', error);
-      if (error.response?.status === 400) {
-        setError('Cannot delete namespace with tasks. Please delete all tasks first.');
-      } else {
-        setError('Failed to delete namespace');
-      }
+      setError('Failed to delete workspace');
     }
   };
 
@@ -276,7 +294,7 @@ function Dashboard({ user }) {
                         <Box display="flex" alignItems="center" mt="auto">
                           <Chip
                             icon={<TaskIcon />}
-                            label="0 tasks"
+                            label={`${namespaceTasks[namespace._id]?.total || 0} tasks`}
                             size="small"
                             sx={{
                               backgroundColor: '#f57c00',

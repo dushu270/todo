@@ -37,6 +37,7 @@ function NamespaceView() {
   const navigate = useNavigate();
   const [namespace, setNamespace] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [showCompleted, setShowCompleted] = useState(true);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -161,7 +162,12 @@ function NamespaceView() {
     setNewTask({ ...newTask, checklist: updatedChecklist });
   };
 
-  const completedTasks = tasks.filter(task => task.completed).length;
+  const completedTasks = tasks.filter(task => {
+    // A task is completed when ALL checklist items are completed
+    const completedItems = task.checklist.filter(item => item.completed).length;
+    const totalItems = task.checklist.length;
+    return totalItems > 0 && completedItems === totalItems;
+  }).length;
 
   if (loading) {
     return (
@@ -203,7 +209,7 @@ function NamespaceView() {
                 {namespace.description}
               </Typography>
             )}
-            <Box display="flex" gap={1} mt={1.5}>
+            <Box display="flex" gap={1} mt={1.5} alignItems="center">
               <Chip 
                 icon={<TaskIcon />}
                 label={`${tasks.length} tasks`} 
@@ -224,6 +230,27 @@ function NamespaceView() {
                   fontSize: '0.8rem'
                 }}
               />
+              {completedTasks > 0 && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  sx={{
+                    borderColor: '#ffc107',
+                    color: '#ffc107',
+                    fontSize: '0.7rem',
+                    height: '24px',
+                    minWidth: 'auto',
+                    px: 1,
+                    '&:hover': {
+                      borderColor: '#f57c00',
+                      backgroundColor: 'rgba(255, 193, 7, 0.1)'
+                    }
+                  }}
+                >
+                  {showCompleted ? 'Hide' : 'Show'} Completed
+                </Button>
+              )}
             </Box>
           </Box>
         </Box>
@@ -259,18 +286,69 @@ function NamespaceView() {
             </Button>
           </Paper>
         ) : (
-          <Grid container spacing={2}>
-            {tasks.map((task) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={task._id}>
-                <TaskCard 
-                  task={task} 
-                  onDelete={() => handleDeleteTask(task._id)}
-                  onUpdate={(updatedTask) => handleUpdateTask(task._id, updatedTask)}
-                  onToggle={() => handleToggleTask(task._id)}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          <>
+            {(() => {
+              // Filter tasks based on showCompleted setting
+              const filteredTasks = showCompleted 
+                ? tasks 
+                : tasks.filter(task => {
+                    const completedItems = task.checklist.filter(item => item.completed).length;
+                    const totalItems = task.checklist.length;
+                    return !(totalItems > 0 && completedItems === totalItems);
+                  });
+
+              if (filteredTasks.length === 0) {
+                return (
+                  <Paper sx={{ 
+                    p: 4, 
+                    textAlign: 'center',
+                    backgroundColor: '#fff9c4',
+                    borderRadius: '16px',
+                    border: '1px solid #e0e0e0'
+                  }}>
+                    <CheckCircleIcon sx={{ fontSize: 64, color: '#4caf50', mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: '#333', mb: 1, fontWeight: 500 }}>
+                      {showCompleted ? 'All tasks completed!' : 'No pending tasks'}
+                    </Typography>
+                    <Typography sx={{ color: '#666', mb: 3 }}>
+                      {showCompleted 
+                        ? 'Great job! You\'ve completed all your tasks.' 
+                        : 'All your tasks are completed. Create new ones or show completed tasks.'}
+                    </Typography>
+                    <Button 
+                      variant="contained" 
+                      startIcon={<AddIcon />}
+                      onClick={() => setOpenDialog(true)}
+                      sx={{
+                        backgroundColor: '#ffc107',
+                        color: '#333',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        '&:hover': { backgroundColor: '#f57c00' }
+                      }}
+                    >
+                      Create New Task
+                    </Button>
+                  </Paper>
+                );
+              }
+
+              return (
+                <Grid container spacing={2}>
+                  {filteredTasks.map((task) => (
+                    <Grid item xs={12} sm={6} md={4} lg={3} key={task._id}>
+                      <TaskCard 
+                        task={task} 
+                        onDelete={() => handleDeleteTask(task._id)}
+                        onUpdate={(updatedTask) => handleUpdateTask(task._id, updatedTask)}
+                        onToggle={() => handleToggleTask(task._id)}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              );
+            })()}
+          </>
         )}
 
         <Fab
