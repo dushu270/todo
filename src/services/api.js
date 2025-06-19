@@ -3,7 +3,7 @@ import { auth } from '../config/firebase';
 
 // API Configuration - Updated with actual Render backend URL
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://https://todo-backend-production-5c0a.up.railway.app/api'  // ✅ Your actual Render URL
+  ? 'https://todo-backend-production-5c0a.up.railway.app/api'  // ✅ Your actual Render URL
   : 'http://localhost:4000/api';
 
 const api = axios.create({
