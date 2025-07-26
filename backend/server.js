@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const serverless = require('serverless-http');
 require('dotenv').config();
 
 const app = express();
@@ -95,8 +96,21 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-}); 
+// Detect environment and start accordingly
+const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
+
+if (isLambda) {
+  // Lambda mode - export the app wrapped with serverless-http
+  console.log('🔧 Running in AWS Lambda mode');
+  module.exports.handler = serverless(app);
+} else {
+  // Local server mode - start the Express server
+  console.log('🔧 Running in local server mode');
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
+
+// Export app for both modes
+module.exports = app; 

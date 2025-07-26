@@ -1,15 +1,16 @@
 import axios from 'axios';
 import { auth } from '../config/firebase';
 
-// API Configuration - Updated with actual Render backend URL
+// API Configuration - Updated with Lambda API Gateway URL
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://todo-erbe.onrender.com/api'  // ✅ Your actual Render URL
+  ? `${process.env.API_URL}/api`  // ✅ Your Lambda API Gateway URL
   : 'http://localhost:4000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'x-api-key': process.env.API_KEY, // ONLY ADDING API KEY
   },
 });
 
@@ -27,13 +28,17 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Handle auth errors
+// Handle auth errors and API key issues
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid - redirect to login
       window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      // API key issue - show error message
+      console.error('API Key Error:', error.response?.data);
+      alert('API access denied. Please check your configuration.');
     }
     return Promise.reject(error);
   }
