@@ -31,12 +31,13 @@ const corsOptions = {
     ? [
         'https://main.d2srwj9mjvfxk8.amplifyapp.com',
         'https://d2srwj9mjvfxk8.amplifyapp.com',
-        'https://todo.dushyanth.click'
+        'https://todo.dushyanth.click',
+        'https://ik9a2wkznf.execute-api.ap-south-1.amazonaws.com'
       ]
     : ['http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
 };
 
 app.use(cors(corsOptions));
