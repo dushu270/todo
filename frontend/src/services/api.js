@@ -2,9 +2,16 @@ import axios from 'axios';
 import { auth } from '../config/firebase';
 
 // API Configuration - Updated with Lambda API Gateway URL
+// Debug environment variables
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('API_URL:', process.env.API_URL);
+console.log('API_KEY:', process.env.API_KEY);
+
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? `${process.env.API_URL}/api`  // ✅ Your Lambda API Gateway URL
   : 'http://localhost:4000/api';
+
+console.log('API_BASE_URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
