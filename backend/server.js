@@ -1,3 +1,8 @@
+// Add Layer path for Lambda
+if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  require('module').globalPaths.push('/opt/nodejs/node_modules');
+}
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -112,5 +117,7 @@ if (isLambda) {
   });
 }
 
-// Export app for both modes
-module.exports = app; 
+// Export app for local development
+if (!isLambda) {
+  module.exports = app;
+} 
