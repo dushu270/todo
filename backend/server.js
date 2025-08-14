@@ -32,7 +32,7 @@ const corsOptions = {
         'https://main.d2srwj9mjvfxk8.amplifyapp.com',
         'https://d2srwj9mjvfxk8.amplifyapp.com',
         'https://todo.dushyanth.click',
-        'https://ik9a2wkznf.execute-api.ap-south-1.amazonaws.com'
+        'https://tjvs487gl7.execute-api.ap-south-1.amazonaws.com/prod'
       ]
     : ['http://localhost:3000'],
   credentials: true,

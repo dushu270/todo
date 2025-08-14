@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for Todo Backend Lambda Function
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs22.x
+
+Resources:
+  # IAM Role with Admin Access
+  TodoBackendRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: LambdaBasicExecutionRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  # Lambda Function
+  TodoBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: todo-backend
+      CodeUri: .
+      Handler: server.handler
+      Role: !GetAtt TodoBackendRole.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: GET
+        RootPath:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+
+  # API Gateway
+  TodoBackendApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: todo-backend-api
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,x-api-key'"
+        AllowOrigin: "'*'"
+        AllowCredentials: "'true'"
+
+Outputs:
+  TodoBackendFunction:
+    Description: "Todo Backend Lambda Function ARN"
+    Value: !GetAtt TodoBackendFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TodoBackendFunction"
+
+  TodoBackendApi:
+    Description: "API Gateway endpoint URL for Todo Backend"
+    Value: !Sub "https://${TodoBackendApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+    Export:
+      Name: !Sub "${AWS::StackName}-TodoBackendApi"
+
+  TodoBackendRole:
+    Description: "IAM Role ARN for Todo Backend"
+    Value: !GetAtt TodoBackendRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TodoBackendRole" 

@@ -1,0 +1,12 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "todo-backend-lambda-sam"
+resolve_s3 = true
+s3_prefix = "todo-backend-lambda-sam"
+region = "ap-south-1"
+profile = "dushu"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
