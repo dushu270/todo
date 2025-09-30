@@ -28,7 +28,9 @@ const corsOptions = {
         'https://main.d2srwj9mjvfxk8.amplifyapp.com',
         'https://d2srwj9mjvfxk8.amplifyapp.com',
         'https://todo.dushyanth.click',
-        'https://tjvs487gl7.execute-api.ap-south-1.amazonaws.com/prod'
+        'https://tjvs487gl7.execute-api.ap-south-1.amazonaws.com/prod',
+        'https://todoappblob.z29.web.core.windows.net',
+        'https://code.azuretodo.dushyanth.click'
       ]
     : ['http://localhost:3000'],
   credentials: true,
